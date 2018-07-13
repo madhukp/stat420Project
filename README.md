@@ -1,2 +1,2 @@
-# stat420Proposal
-Project proposal for STAT 420
+# stat420Project
+Repository for STAT 420 final project
