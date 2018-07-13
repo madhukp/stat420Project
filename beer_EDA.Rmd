@@ -1,0 +1,189 @@
+---
+title: "Beer EDA"
+author: "Nicholas Reinicke"
+date: "7/12/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Beer EDA
+
+```{r, message = FALSE, warning = FALSE}
+library(ggplot2)
+library(MASS)
+library(faraway)
+
+get_num_params = function(model) {
+  length(coef(model))
+}
+
+get_loocv_rmse = function(model) {
+  sqrt(mean((resid(model) / (1 - hatvalues(model))) ^ 2))
+}
+
+get_adj_r2 = function(model) {
+  summary(model)$adj.r.squared
+}
+
+plot_fitted_v_residuals = function(model) {
+  ggplot(model) +
+    geom_point(aes(x = .fitted, y = .resid)) +
+    geom_abline(slope = 0, intercept = 0) +
+    labs(x = "Fitted", y = "Residual", title = "Fitted vs Residuals")
+}
+```
+
+```{r}
+beer_data = read.csv("data/recipeData_min.csv")
+str(beer_data)
+```
+```{r fig.height=20, fig.width=20}
+pairs(beer_data, col = "dodgerblue", pch = 20)
+```
+
+```{r}
+n = length(beer_data$ABV)
+
+start_model = lm(ABV ~ .^2, data = beer_data)
+
+cdist = cooks.distance(start_model)
+start_model = lm(ABV ~ .^2, data = beer_data, subset = cdist <= 4 / n)
+
+model = step(start_model,
+             direction = 'backward',
+             trace = 0)
+```
+
+**LOOCV RMSE**
+
+```{r}
+get_loocv_rmse(model)
+```
+
+**Adjusted R2**
+
+```{r}
+get_adj_r2(model)
+```
+
+**Num Params**
+
+```{r}
+get_num_params(model)
+```
+
+**Params**
+
+```{r}
+coef(model)
+```
+
+```{r}
+plot_fitted_v_residuals(model)
+```
+
+```{r}
+qqnorm(resid(model), pch = 20)
+qqline(resid(model))
+```
+
+```{r}
+df = data.frame(x = fitted(model), y = beer_data$ABV[cdist <= 4/n])
+ggplot(df, aes(x = x, y = y)) +
+  geom_point() +
+  geom_abline(slope = 1, intercept = 0) +
+  labs(x = "Fitted Values", y = "Actual Values", title = "Fitted vs Actual Values")
+```
+
+```{r}
+simple_model = lm(ABV ~ BoilGravity, data = beer_data, subset = cdist <= 4/n)
+```
+
+**LOOCV RMSE**
+
+```{r}
+get_loocv_rmse(simple_model)
+```
+
+**Adjusted R2**
+
+```{r}
+get_adj_r2(simple_model)
+```
+
+**Num Params**
+
+```{r}
+get_num_params(simple_model)
+```
+
+**Params**
+
+```{r}
+coef(simple_model)
+```
+
+```{r}
+plot_fitted_v_residuals(simple_model)
+```
+
+```{r}
+qqnorm(resid(simple_model), pch = 20)
+qqline(resid(simple_model))
+```
+
+```{r}
+df = data.frame(x = fitted(simple_model), y = beer_data$ABV[cdist <= 4/n])
+ggplot(df, aes(x = x, y = y)) +
+  geom_point() +
+  geom_abline(slope = 1, intercept = 0) +
+  labs(x = "Fitted Values", y = "Actual Values", title = "Fitted vs Actual Values")
+```
+
+```{r}
+ggplot(beer_data[cdist <= 4/n,], aes(x = BoilGravity, y = ABV, colour = Style)) +
+  geom_point()
+```
+
+```{r}
+int_model = lm(ABV ~ BoilGravity * Style, data = beer_data, subset = cdist <= 4/n)
+anova(simple_model, int_model)
+```
+
+```{r}
+get_adj_r2(int_model)
+coef(int_model)
+```
+
+```{r}
+library(broom)
+coefs = summary(int_model)$coef
+
+amber_int = coefs[1,1]
+brown_int = amber_int + coefs[3,1]
+lager_int = amber_int + coefs[4,1]
+stout_int = amber_int + coefs[5,1]
+
+amber_slp = coefs[2,1]
+brown_slp = amber_slp + coefs[6,1]
+lager_slp = amber_slp + coefs[7,1]
+stout_slp = amber_slp + coefs[8,1]
+
+plt_data = data.frame(slope = c(amber_slp, brown_slp, lager_slp, stout_slp),
+                      int = c(amber_int, brown_int, lager_int, stout_int),
+                      Style = c('American Amber Ale', 'American Brown Ale', 'American Light Lager', 'American Stout'))
+
+ggplot(beer_data[cdist <= 4/n,], aes(x = BoilGravity, y = ABV, colour = Style)) + 
+  geom_point(size = 0.75) +
+  geom_abline(data = plt_data, aes(slope = slope, intercept = int, colour = Style)) + 
+  labs(title = 'ABV vs Boil Gravity Based and Style', 
+       x = 'Boil Gravity', 
+       y = 'ABV (%)',
+       colour = 'Beer Style')
+```
+
+
+

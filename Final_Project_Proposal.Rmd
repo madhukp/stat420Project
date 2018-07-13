@@ -1,0 +1,46 @@
+---
+title: "Final Project Proposal"
+date: "7/13/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Group Introduction
+
+This study will be conducted by the following individuals:
+
+ - Nicholas Reinicke (NetID: ndr3)
+ - Raymond Ordona (NetID: )
+ - Apoorva H Srinivasa(NetID: )
+ - Madhukar (NetID: )
+
+## Title
+
+Predicting Alcohol By Volume in Craft Beer
+
+## Dataset
+
+For this project we will be utilizing a dataset that contains information on approximately 75,000 different recipies of craft beer. The raw data was sourced from this link: https://www.kaggle.com/jtrofe/beer-recipes. 
+
+After cleaning the data we're left with the following data structure:
+
+```{r}
+beer_data = read.csv("data/recipeData_clean.csv")
+str(beer_data)
+```
+
+Each of these variables describes a particular property of the beer itself or a method of making the beer. In particular, we're interested in the ABV measure which represents the Alcohol By Volume (%) of the final product. It should be noted that the relationship between ABV, Original Gravity, and Final Gravity is already know to be:
+
+\[
+ABV=133.62*(OG-FG)
+\]
+
+And so we will be interested in determining if we can predict the ABV while excluding the Final Gravity metric. 
+
+
+
+
+
